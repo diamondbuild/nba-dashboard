@@ -1,3 +1,77 @@
+import schedule
+import time
+import subprocess
+from datetime import datetime
+import os
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+# Scripts to run
+RESULTS_TRACKER_SCRIPT = "track_results.py"
+EDGE_FINDER_SCRIPT = "find_edges_v2_TELEGRAM.py"
+
+# ============================================================================
+# JOB FUNCTIONS
+# ============================================================================
+
+def run_results_tracker():
+    """Run the results tracker script"""
+    current_time = datetime.now().strftime('%Y-%m-%d %I:%M %p')
+    print(f"\n{'='*70}")
+    print(f"📈 Running Results Tracker at {current_time}")
+    print(f"{'='*70}")
+
+    try:
+        result = subprocess.run(
+            ['python', RESULTS_TRACKER_SCRIPT],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+
+        if result.returncode == 0:
+            print("✅ Results tracker completed successfully!")
+            print(result.stdout)
+        else:
+            print("❌ Results tracker failed!")
+            print(result.stderr)
+    except Exception as e:
+        print(f"❌ Error running results tracker: {e}")
+
+    print(f"{'='*70}\n")
+
+def run_edge_finder():
+    """Run the edge finder script"""
+    current_time = datetime.now().strftime('%Y-%m-%d %I:%M %p')
+    print(f"\n{'='*70}")
+    print(f"🏀 Running Edge Finder at {current_time}")
+    print(f"{'='*70}")
+
+    try:
+        result = subprocess.run(
+            ['python', EDGE_FINDER_SCRIPT],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+
+        if result.returncode == 0:
+            print("✅ Edge finder completed successfully!")
+            print(result.stdout)
+        else:
+            print("❌ Edge finder failed!")
+            print(result.stderr)
+    except Exception as e:
+        print(f"❌ Error running edge finder: {e}")
+
+    print(f"{'='*70}\n")
+
+# ============================================================================
+# MAIN SCHEDULER
+# ============================================================================
+
 def main():
     """Main scheduler loop"""
     print("\n" + "="*70)
@@ -6,22 +80,15 @@ def main():
     print("\nSchedule (All times in UTC, converted from EST):")
     print("  • EVERY DAY:")
     print("    - 08:00 UTC (3:00 AM EST): Results Tracker")
-    print("\n  • WEEKDAYS:")
-    print("    - 21:00 UTC (4:00 PM EST): Data Update")
+    print("\n  • DAILY:")
     print("    - 22:00 UTC (5:00 PM EST): Edge Finder")
-    print("\n  • WEEKENDS & HOLIDAYS:")
-    print("    - 15:00 UTC (10:00 AM EST): Data Update")
-    print("    - 16:00 UTC (11:00 AM EST): Edge Finder")
     print("\n" + "="*70 + "\n")
 
     # Results tracker at 3 AM EST (8 AM UTC) EVERY DAY
     schedule.every().day.at("08:00").do(run_results_tracker)
 
-    # Daily check at 12:01 AM EST (5:01 AM UTC)
-    schedule.every().day.at("05:01").do(daily_check)
-
-    # Run initial check
-    daily_check()
+    # Edge finder at 5 PM EST (22 PM UTC) EVERY DAY
+    schedule.every().day.at("22:00").do(run_edge_finder)
 
     print("✅ Scheduler is running... Press Ctrl+C to stop\n")
 
@@ -31,3 +98,7 @@ def main():
             time.sleep(60)
     except KeyboardInterrupt:
         print("\n\n👋 Scheduler stopped by user")
+        print("="*70 + "\n")
+
+if __name__ == "__main__":
+    main()
