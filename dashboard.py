@@ -3,7 +3,6 @@ import pandas as pd
 from datetime import datetime
 import os
 import requests
-import pytz
 
 # ============================================================================
 # PAGE CONFIG
@@ -110,26 +109,22 @@ def get_team(player_name, team_map):
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def load_results_data():
-    """Load historical results from GitHub"""
-    url = 'https://raw.githubusercontent.com/diamondbuild/nba-dashboard/main/results_history.csv'
-    try:
-        df = pd.read_csv(url)
+    """Load historical results"""
+    if os.path.exists('results_history.csv'):
+        df = pd.read_csv('results_history.csv')
         df['DATE'] = pd.to_datetime(df['DATE'])
         return df
-    except:
-        return pd.DataFrame()
+    return pd.DataFrame()
 
 @st.cache_data(ttl=300)
 def load_todays_edges():
-    """Load today's edge picks from GitHub"""
-    eastern = pytz.timezone('US/Eastern')
-    today = datetime.now(eastern).strftime('%Y-%m-%d')
-    url = f'https://raw.githubusercontent.com/diamondbuild/nba-dashboard/main/edges_{today}.csv'
-    try:
-        df = pd.read_csv(url)
+    """Load today's edge picks"""
+    today = datetime.now().strftime('%Y-%m-%d')
+    filename = f'edges_{today}.csv'
+    if os.path.exists(filename):
+        df = pd.read_csv(filename)
         return df
-    except:
-        return pd.DataFrame()
+    return pd.DataFrame()
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -194,33 +189,6 @@ def calculate_edge_breakdown(df):
             win_rate = (wins / total * 100) if total > 0 else 0
             breakdown.append({
                 'Edge': bucket,
-                'Record': f"{wins}-{losses}",
-                'Win%': f"{win_rate:.1f}%"
-            })
-
-    return pd.DataFrame(breakdown)
-
-def calculate_stat_type_breakdown(df):
-    """Calculate win rate by stat type (PTS, REB, AST, PRA, etc.)"""
-    if len(df) == 0:
-        return pd.DataFrame()
-
-    valid_df = df[df['RESULT'] != 'VOID'].copy()
-
-    # Get unique stat types
-    stat_types = valid_df['STAT'].unique()
-
-    # Calculate stats by stat type
-    breakdown = []
-    for stat_type in sorted(stat_types):
-        type_df = valid_df[valid_df['STAT'] == stat_type]
-        if len(type_df) > 0:
-            wins = (type_df['RESULT'] == 'WIN').sum()
-            losses = (type_df['RESULT'] == 'LOSS').sum()
-            total = wins + losses
-            win_rate = (wins / total * 100) if total > 0 else 0
-            breakdown.append({
-                'Stat': stat_type,
                 'Record': f"{wins}-{losses}",
                 'Win%': f"{win_rate:.1f}%"
             })
@@ -312,32 +280,11 @@ else:
     st.sidebar.info("No historical data yet.")
 
 # ============================================================================
-# SIDEBAR - STAT TYPE PERFORMANCE TABLE
-# ============================================================================
-
-st.sidebar.divider()
-st.sidebar.subheader("📊 Record by Stat Type")
-
-if len(results_df) > 0:
-    stat_type_breakdown = calculate_stat_type_breakdown(results_df)
-    if len(stat_type_breakdown) > 0:
-        st.sidebar.dataframe(
-            stat_type_breakdown,
-            use_container_width=True,
-            hide_index=True
-        )
-    else:
-        st.sidebar.info("Not enough data yet.")
-else:
-    st.sidebar.info("No historical data yet.")
-
-# ============================================================================
 # TODAY'S PICKS (FILTERED)
 # ============================================================================
 
 # Header with date
-eastern = pytz.timezone('US/Eastern')
-today_str = datetime.now(eastern).strftime('%B %d, %Y')
+today_str = datetime.now().strftime('%B %d, %Y')
 st.header(f"🎯 Today's Edge Picks - {today_str}")
 
 if len(todays_edges) > 0:
@@ -384,7 +331,7 @@ if len(todays_edges) > 0:
     else:
         st.info("No picks match your filter criteria. Try adjusting the filters.")
 else:
-    st.info("No picks for today yet. Run find_edges_v2_TELEGRAM.py to generate.")
+    st.info("No picks yet. Check back closer to game time! 🏀")
 
 st.divider()
 
@@ -459,5 +406,5 @@ else:
 # ============================================================================
 
 st.divider()
-st.caption(f"Last updated: {datetime.now(eastern).strftime('%B %d, %Y at %I:%M %p EST')}")
+st.caption(f"Last updated: {datetime.now().strftime('%B %d, %Y at %I:%M %p EST')}")
 st.caption("Data refreshes every 5 minutes")
