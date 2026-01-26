@@ -108,7 +108,7 @@ def get_team(player_name, team_map):
 # LOAD DATA
 # ============================================================================
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=300)  # Cache for 5 minutes
 def load_results_data():
     """Load historical results from GitHub"""
     url = 'https://raw.githubusercontent.com/diamondbuild/nba-dashboard/main/results_history.csv'
@@ -130,7 +130,6 @@ def load_todays_edges():
         return df
     except:
         return pd.DataFrame()
-
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -195,6 +194,30 @@ def calculate_edge_breakdown(df):
             win_rate = (wins / total * 100) if total > 0 else 0
             breakdown.append({
                 'Edge': bucket,
+                'Record': f"{wins}-{losses}",
+                'Win%': f"{win_rate:.1f}%"
+            })
+
+    return pd.DataFrame(breakdown)
+
+def calculate_bet_type_breakdown(df):
+    """Calculate win rate by bet type (OVER/UNDER)"""
+    if len(df) == 0:
+        return pd.DataFrame()
+
+    valid_df = df[df['RESULT'] != 'VOID'].copy()
+
+    # Calculate stats by bet type
+    breakdown = []
+    for bet_type in ['OVER', 'UNDER']:
+        type_df = valid_df[valid_df['BET_TYPE'] == bet_type]
+        if len(type_df) > 0:
+            wins = (type_df['RESULT'] == 'WIN').sum()
+            losses = (type_df['RESULT'] == 'LOSS').sum()
+            total = wins + losses
+            win_rate = (wins / total * 100) if total > 0 else 0
+            breakdown.append({
+                'Bet Type': bet_type,
                 'Record': f"{wins}-{losses}",
                 'Win%': f"{win_rate:.1f}%"
             })
@@ -277,6 +300,26 @@ if len(results_df) > 0:
     if len(edge_breakdown) > 0:
         st.sidebar.dataframe(
             edge_breakdown,
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.sidebar.info("Not enough data yet.")
+else:
+    st.sidebar.info("No historical data yet.")
+
+# ============================================================================
+# SIDEBAR - BET TYPE PERFORMANCE TABLE
+# ============================================================================
+
+st.sidebar.divider()
+st.sidebar.subheader("🎲 Record by Bet Type")
+
+if len(results_df) > 0:
+    bet_type_breakdown = calculate_bet_type_breakdown(results_df)
+    if len(bet_type_breakdown) > 0:
+        st.sidebar.dataframe(
+            bet_type_breakdown,
             use_container_width=True,
             hide_index=True
         )
