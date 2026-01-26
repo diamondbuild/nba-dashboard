@@ -27,7 +27,7 @@ def git_push_updates():
         token = os.getenv('GIT_TOKEN', '')
         user = os.getenv('GIT_USER', '')
         email = os.getenv('GIT_EMAIL', '')
-        
+
         if token and user:
             os.system(f'git config --global user.name "{user}"')
             os.system(f'git config --global user.email "{email}"')
@@ -50,7 +50,7 @@ def run_results_tracker():
     print(f"\n{'='*70}")
     print(f"📈 Running Results Tracker at {current_time}")
     print(f"{'='*70}")
-    
+
     try:
         result = subprocess.run(
             ['python', RESULTS_TRACKER_SCRIPT],
@@ -58,7 +58,7 @@ def run_results_tracker():
             text=True,
             timeout=300
         )
-        
+
         if result.returncode == 0:
             print("✅ Results tracker completed successfully!")
             print(result.stdout)
@@ -69,9 +69,9 @@ def run_results_tracker():
         print("⏱️ Results tracker timed out after 5 minutes")
     except Exception as e:
         print(f"❌ Error running results tracker: {e}")
-    
+
     print(f"{'='*70}\n")
-    
+
     # Push results to GitHub
     git_push_updates()
 
@@ -81,7 +81,7 @@ def run_data_update():
     print(f"\n{'='*70}")
     print(f"📊 Running Data Update at {current_time}")
     print(f"{'='*70}")
-    
+
     try:
         result = subprocess.run(
             ['python', DATA_UPDATE_SCRIPT],
@@ -89,7 +89,7 @@ def run_data_update():
             text=True,
             timeout=300
         )
-        
+
         if result.returncode == 0:
             print("✅ Data update completed successfully!")
             print(result.stdout)
@@ -100,7 +100,7 @@ def run_data_update():
         print("⏱️ Data update timed out after 5 minutes")
     except Exception as e:
         print(f"❌ Error running data update: {e}")
-    
+
     print(f"{'='*70}\n")
 
 def run_edge_finder():
@@ -109,7 +109,7 @@ def run_edge_finder():
     print(f"\n{'='*70}")
     print(f"🏀 Running Edge Finder at {current_time}")
     print(f"{'='*70}")
-    
+
     try:
         result = subprocess.run(
             ['python', EDGE_FINDER_SCRIPT],
@@ -117,7 +117,7 @@ def run_edge_finder():
             text=True,
             timeout=300
         )
-        
+
         if result.returncode == 0:
             print("✅ Edge finder completed successfully!")
             print(result.stdout)
@@ -128,9 +128,9 @@ def run_edge_finder():
         print("⏱️ Edge finder timed out after 5 minutes")
     except Exception as e:
         print(f"❌ Error running edge finder: {e}")
-    
+
     print(f"{'='*70}\n")
-    
+
     # Push results to GitHub after edge finder completes
     git_push_updates()
 
@@ -143,48 +143,43 @@ def is_holiday():
     today = datetime.now().date()
     return today in us_holidays
 
-def should_run_at_morning():
-    """Determine if we should run in the morning today"""
+def should_run_morning_schedule():
+    """Determine if we should run morning schedule for data update & edge finder"""
     return is_weekend() or is_holiday()
 
 def daily_check():
-    """Daily check to determine when to schedule today's run"""
+    """Daily check to determine when to schedule today's data update & edge finder"""
     current_time = datetime.now().strftime('%Y-%m-%d %I:%M %p')
     day_type = "Weekend" if is_weekend() else "Holiday" if is_holiday() else "Weekday"
-    
+
     print(f"\n{'='*70}")
     print(f"📅 Daily Check - {current_time}")
     print(f"{'='*70}")
     print(f"Day Type: {day_type}")
-    
-    # Clear any existing daily runs
+
+    # Clear any existing daily runs (but NOT the 3 AM results tracker)
     schedule.clear('daily_run')
-    
-    if should_run_at_morning():
-        results_time = "8:00 AM"
+
+    if should_run_morning_schedule():
         data_time = "10:00 AM"
         edge_time = "11:00 AM"
-        print(f"⏰ Results Tracker: {results_time}")
         print(f"⏰ Data Update: {data_time}")
         print(f"⏰ Edge Finder: {edge_time}")
-        schedule.every().day.at("08:00").do(run_results_tracker).tag('daily_run')
         schedule.every().day.at("10:00").do(run_data_update).tag('daily_run')
         schedule.every().day.at("11:00").do(run_edge_finder).tag('daily_run')
     else:
-        results_time = "2:00 PM"
         data_time = "4:00 PM"
         edge_time = "5:00 PM"
-        print(f"⏰ Results Tracker: {results_time}")
         print(f"⏰ Data Update: {data_time}")
         print(f"⏰ Edge Finder: {edge_time}")
-        schedule.every().day.at("14:00").do(run_results_tracker).tag('daily_run')
         schedule.every().day.at("16:00").do(run_data_update).tag('daily_run')
         schedule.every().day.at("17:00").do(run_edge_finder).tag('daily_run')
-    
+
     if is_holiday():
         holiday_name = us_holidays.get(datetime.now().date())
         print(f"🎉 Holiday: {holiday_name}")
-    
+
+    print(f"✅ Results Tracker: 3:00 AM (runs daily)")
     print(f"{'='*70}\n")
 
 # ============================================================================
@@ -197,28 +192,27 @@ def main():
     print("🏀 NBA AUTOMATED WORKFLOW SCHEDULER")
     print("="*70)
     print("\nSchedule:")
-    print("  • Weekdays:")
-    print("    - 2:00 PM: Results Tracker")
-    print("    - 4:00 PM: Data Update")
-    print("    - 5:00 PM: Edge Finder")
-    print("  • Weekends:")
-    print("    - 8:00 AM: Results Tracker")
-    print("    - 10:00 AM: Data Update")
-    print("    - 11:00 AM: Edge Finder")
-    print("  • Holidays:")
-    print("    - 8:00 AM: Results Tracker")
-    print("    - 10:00 AM: Data Update")
-    print("    - 11:00 AM: Edge Finder")
+    print("  • EVERY DAY:")
+    print("    - 3:00 AM: Results Tracker (grades yesterday's bets)")
+    print("\n  • WEEKDAYS:")
+    print("    - 4:00 PM: Data Update (fresh projections)")
+    print("    - 5:00 PM: Edge Finder (today's picks)")
+    print("\n  • WEEKENDS & HOLIDAYS:")
+    print("    - 10:00 AM: Data Update (fresh projections)")
+    print("    - 11:00 AM: Edge Finder (today's picks)")
     print("\n" + "="*70 + "\n")
-    
-    # Run daily check at midnight to set up today's schedule
+
+    # FIXED SCHEDULE: Results tracker at 3 AM EVERY DAY
+    schedule.every().day.at("03:00").do(run_results_tracker)
+
+    # Run daily check at midnight to set up today's data update & edge finder schedule
     schedule.every().day.at("00:01").do(daily_check)
-    
+
     # Run initial check to set up schedule for today
     daily_check()
-    
+
     print("✅ Scheduler is running... Press Ctrl+C to stop\n")
-    
+
     try:
         while True:
             schedule.run_pending()
