@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import requests
+import pytz
 
 # ============================================================================
 # PAGE CONFIG
@@ -119,7 +120,8 @@ def load_results_data():
 @st.cache_data(ttl=300)
 def load_todays_edges():
     """Load today's edge picks"""
-    today = datetime.now().strftime('%Y-%m-%d')
+    eastern = pytz.timezone('US/Eastern')
+    today = datetime.now(eastern).strftime('%Y-%m-%d')
     filename = f'edges_{today}.csv'
     if os.path.exists(filename):
         df = pd.read_csv(filename)
@@ -284,7 +286,8 @@ else:
 # ============================================================================
 
 # Header with date
-today_str = datetime.now().strftime('%B %d, %Y')
+eastern = pytz.timezone('US/Eastern')
+today_str = datetime.now(eastern).strftime('%B %d, %Y')
 st.header(f"🎯 Today's Edge Picks - {today_str}")
 
 if len(todays_edges) > 0:
@@ -406,5 +409,5 @@ else:
 # ============================================================================
 
 st.divider()
-st.caption(f"Last updated: {datetime.now().strftime('%B %d, %Y at %I:%M %p EST')}")
+st.caption(f"Last updated: {datetime.now(eastern).strftime('%B %d, %Y at %I:%M %p EST')}")
 st.caption("Data refreshes every 5 minutes")
