@@ -108,25 +108,29 @@ def get_team(player_name, team_map):
 # LOAD DATA
 # ============================================================================
 
-@st.cache_data(ttl=300)  # Cache for 5 minutes
+@st.cache_data(ttl=300)
 def load_results_data():
-    """Load historical results"""
-    if os.path.exists('results_history.csv'):
-        df = pd.read_csv('results_history.csv')
+    """Load historical results from GitHub"""
+    url = 'https://raw.githubusercontent.com/diamondbuild/nba-dashboard/main/results_history.csv'
+    try:
+        df = pd.read_csv(url)
         df['DATE'] = pd.to_datetime(df['DATE'])
         return df
-    return pd.DataFrame()
+    except:
+        return pd.DataFrame()
 
 @st.cache_data(ttl=300)
 def load_todays_edges():
-    """Load today's edge picks"""
+    """Load today's edge picks from GitHub"""
     eastern = pytz.timezone('US/Eastern')
     today = datetime.now(eastern).strftime('%Y-%m-%d')
-    filename = f'edges_{today}.csv'
-    if os.path.exists(filename):
-        df = pd.read_csv(filename)
+    url = f'https://raw.githubusercontent.com/diamondbuild/nba-dashboard/main/edges_{today}.csv'
+    try:
+        df = pd.read_csv(url)
         return df
-    return pd.DataFrame()
+    except:
+        return pd.DataFrame()
+
 
 # ============================================================================
 # HELPER FUNCTIONS
