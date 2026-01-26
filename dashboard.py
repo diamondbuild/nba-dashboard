@@ -200,24 +200,27 @@ def calculate_edge_breakdown(df):
 
     return pd.DataFrame(breakdown)
 
-def calculate_bet_type_breakdown(df):
-    """Calculate win rate by bet type (OVER/UNDER)"""
+def calculate_stat_type_breakdown(df):
+    """Calculate win rate by stat type (PTS, REB, AST, PRA, etc.)"""
     if len(df) == 0:
         return pd.DataFrame()
 
     valid_df = df[df['RESULT'] != 'VOID'].copy()
 
-    # Calculate stats by bet type
+    # Get unique stat types
+    stat_types = valid_df['STAT'].unique()
+
+    # Calculate stats by stat type
     breakdown = []
-    for bet_type in ['OVER', 'UNDER']:
-        type_df = valid_df[valid_df['BET_TYPE'] == bet_type]
+    for stat_type in sorted(stat_types):
+        type_df = valid_df[valid_df['STAT'] == stat_type]
         if len(type_df) > 0:
             wins = (type_df['RESULT'] == 'WIN').sum()
             losses = (type_df['RESULT'] == 'LOSS').sum()
             total = wins + losses
             win_rate = (wins / total * 100) if total > 0 else 0
             breakdown.append({
-                'Bet Type': bet_type,
+                'Stat': stat_type,
                 'Record': f"{wins}-{losses}",
                 'Win%': f"{win_rate:.1f}%"
             })
@@ -309,17 +312,17 @@ else:
     st.sidebar.info("No historical data yet.")
 
 # ============================================================================
-# SIDEBAR - BET TYPE PERFORMANCE TABLE
+# SIDEBAR - STAT TYPE PERFORMANCE TABLE
 # ============================================================================
 
 st.sidebar.divider()
-st.sidebar.subheader("🎲 Record by Bet Type")
+st.sidebar.subheader("📊 Record by Stat Type")
 
 if len(results_df) > 0:
-    bet_type_breakdown = calculate_bet_type_breakdown(results_df)
-    if len(bet_type_breakdown) > 0:
+    stat_type_breakdown = calculate_stat_type_breakdown(results_df)
+    if len(stat_type_breakdown) > 0:
         st.sidebar.dataframe(
-            bet_type_breakdown,
+            stat_type_breakdown,
             use_container_width=True,
             hide_index=True
         )
