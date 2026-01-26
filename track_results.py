@@ -70,23 +70,39 @@ def get_player_stats_from_game(game_id):
                         name = player.get('athlete', {}).get('displayName', '')
                         stats = player.get('stats', [])
 
-                        # Stats order: MIN, FG, 3PT, FT, OREB, DREB, REB, AST, STL, BLK, TO, PF, PTS
-                        if len(stats) >= 13:
-                            player_stats[name] = {
-                                'PTS': float(stats[12]) if stats[12] != '--' else 0,
-                                'REB': float(stats[6]) if stats[6] != '--' else 0,
-                                'AST': float(stats[7]) if stats[7] != '--' else 0,
-                                'STL': float(stats[8]) if stats[8] != '--' else 0,
-                                'BLK': float(stats[9]) if stats[9] != '--' else 0,
-                                '3PM': float(stats[2].split('-')[0]) if stats[2] != '--' and '-' in stats[2] else 0
-                            }
+                        # ESPN STATS ARRAY (CORRECTED INDICES):
+                        # [0]=MIN, [1]=PTS, [2]=FG, [3]=3PT, [4]=FT, [5]=REB, [6]=?, [7]=AST, 
+                        # [8]=STL, [9]=BLK, [10]=TO, [11]=PF, [12]=?, [13]=+/-
 
-                            # Calculate PRA
-                            player_stats[name]['PRA'] = (
-                                player_stats[name]['PTS'] + 
-                                player_stats[name]['REB'] + 
-                                player_stats[name]['AST']
-                            )
+                        if len(stats) >= 13:
+                            try:
+                                pts = float(stats[1]) if stats[1] != '--' else 0
+                                reb = float(stats[5]) if stats[5] != '--' else 0
+                                ast = float(stats[7]) if stats[7] != '--' else 0
+                                stl = float(stats[8]) if stats[8] != '--' else 0
+                                blk = float(stats[9]) if stats[9] != '--' else 0
+
+                                # Parse 3PM from "X-Y" format
+                                tpm = 0
+                                if stats[3] != '--' and '-' in str(stats[3]):
+                                    tpm = float(str(stats[3]).split('-')[0])
+
+                                player_stats[name] = {
+                                    'PTS': pts,
+                                    'REB': reb,
+                                    'AST': ast,
+                                    'STL': stl,
+                                    'BLK': blk,
+                                    '3PM': tpm,
+                                    # CALCULATE COMBO STATS
+                                    'PRA': pts + reb + ast,
+                                    'PA': pts + ast,
+                                    'PR': pts + reb,
+                                    'RA': reb + ast,
+                                }
+                            except Exception as e:
+                                print(f"      [WARN] Could not parse stats for {name}: {e}")
+                                continue
 
             return player_stats
         return {}
@@ -145,6 +161,28 @@ def load_yesterdays_bets():
         print(f"      [ERROR] Could not read file: {e}")
         return None
 
+def normalize_name(name):
+    """Normalize player name for matching"""
+    return name.lower().strip().replace('.', '').replace("'", '')
+
+def find_player_stat(player_name, stat_type, player_stats):
+    """Find player stat with improved name matching"""
+    normalized_bet_name = normalize_name(player_name)
+
+    # Try exact match first
+    for stats_name, stats in player_stats.items():
+        if normalize_name(stats_name) == normalized_bet_name:
+            return stats.get(stat_type)
+
+    # Try partial match (both ways)
+    for stats_name, stats in player_stats.items():
+        normalized_stats_name = normalize_name(stats_name)
+        if normalized_bet_name in normalized_stats_name or normalized_stats_name in normalized_bet_name:
+            return stats.get(stat_type)
+
+    # No match found
+    return None
+
 def check_bet_results(bets_df, player_stats):
     """Compare bets against actual results"""
     print("\n[3/4] Checking bet results...")
@@ -160,16 +198,8 @@ def check_bet_results(bets_df, player_stats):
         bet_type = bet['BET']  # Should be 'OVER'
         odds = bet['ODDS']
 
-        # Try to find player in stats (handle name variations)
-        actual_stat = None
-        matched_name = None
-
-        for stats_name, stats in player_stats.items():
-            if player_name.lower() in stats_name.lower() or stats_name.lower() in player_name.lower():
-                if stat_type in stats:
-                    actual_stat = stats[stat_type]
-                    matched_name = stats_name
-                    break
+        # Find the actual stat
+        actual_stat = find_player_stat(player_name, stat_type, player_stats)
 
         if actual_stat is None:
             result = 'VOID'
@@ -253,7 +283,7 @@ def generate_summary(results_df, history_df):
         best_bet = None
         worst_bet = None
 
-    # Stats by category - FIXED
+    # Stats by category
     stats_breakdown = {}
     if len(all_valid) > 0:
         for stat in all_valid['STAT'].unique():
