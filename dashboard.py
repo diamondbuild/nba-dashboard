@@ -5,6 +5,12 @@ import requests
 import pytz
 
 # ============================================================================
+# TIMEZONE CONFIG
+# ============================================================================
+
+eastern = pytz.timezone('US/Eastern')
+
+# ============================================================================
 # PAGE CONFIG
 # ============================================================================
 
@@ -75,7 +81,6 @@ def load_results_data():
 @st.cache_data(ttl=300)
 def load_todays_edges():
     """Load today's edge picks from GitHub"""
-    eastern = pytz.timezone('US/Eastern')
     today = datetime.now(eastern).strftime('%Y-%m-%d')
     url = f'https://raw.githubusercontent.com/diamondbuild/nba-dashboard/main/edges_{today}.csv'
     try:
@@ -204,7 +209,7 @@ with col1:
 with col2:
     st.markdown("# NBA EDGE FINDER DASHBOARD")
 
-st.markdown(f"**Updated:** {datetime.now().strftime('%B %d, %Y at %I:%M %p EST')}", unsafe_allow_html=True)
+st.markdown(f"**Updated:** {datetime.now(eastern).strftime('%B %d, %Y at %I:%M %p EST')}", unsafe_allow_html=True)
 st.markdown("---")
 
 tab1, tab2, tab3 = st.tabs(["🎯 Today's Elite Picks", "📊 Historical Results", "📈 Performance"])
@@ -273,7 +278,7 @@ with tab1:
             
             st.markdown("---")
             csv = filtered.to_csv(index=False)
-            st.download_button("📥 Download CSV", data=csv, file_name=f"picks_{datetime.now().strftime('%Y-%m-%d')}.csv", mime="text/csv")
+            st.download_button("📥 Download CSV", data=csv, file_name=f"picks_{datetime.now(eastern).strftime('%Y-%m-%d')}.csv", mime="text/csv")
         else:
             st.warning("No picks match your filters")
         
@@ -290,7 +295,7 @@ with tab2:
     else:
         st.dataframe(results_df, use_container_width=True, height=500)
         csv = results_df.to_csv(index=False)
-        st.download_button("📥 Download CSV", data=csv, file_name=f"results_{datetime.now().strftime('%Y-%m-%d')}.csv", mime="text/csv")
+        st.download_button("📥 Download CSV", data=csv, file_name=f"results_{datetime.now(eastern).strftime('%Y-%m-%d')}.csv", mime="text/csv")
 
 # === TAB 3: PERFORMANCE ANALYSIS ===
 with tab3:
@@ -313,4 +318,4 @@ with tab3:
             st.markdown(f"""<div class="metric-card"><div class="metric-label">Win Rate</div><div class="metric-value" style="color: #3b82f6;">{metrics['win_rate']:.1f}%</div></div>""", unsafe_allow_html=True)
 
 st.markdown("---")
-st.markdown(f"<p style='text-align: center; color: #64748b; font-size: 0.85rem;'>NBA Edge Finder Dashboard | Last Updated {datetime.now().strftime('%B %d, %Y at %I:%M %p EST')}</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align: center; color: #64748b; font-size: 0.85rem;'>NBA Edge Finder Dashboard | Last Updated {datetime.now(eastern).strftime('%B %d, %Y at %I:%M %p EST')}</p>", unsafe_allow_html=True)
