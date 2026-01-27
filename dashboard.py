@@ -17,67 +17,110 @@ st.set_page_config(
 )
 
 # ============================================================================
-# CUSTOM CSS
+# CUSTOM CSS - ELITE STYLING
 # ============================================================================
 
 st.markdown("""
 <style>
-    body { font-family: 'Segoe UI', sans-serif; }
-    .metric-card { 
-        background: linear-gradient(135deg, #1e3a8a 0%, #1f2937 100%);
+    * { font-family: 'Segoe UI', -apple-system, sans-serif; }
+    
+    /* Main theme */
+    [data-testid="stAppViewContainer"] { background: linear-gradient(135deg, #0f172a 0%, #1a202c 100%); }
+    
+    /* Headers */
+    h1, h2, h3 { color: #ffffff; font-weight: 700; }
+    h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+    
+    /* Elite pick cards */
+    .elite-pick {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(20, 83, 45, 0.1) 100%);
+        border: 2px solid #22c55e;
+        border-radius: 12px;
         padding: 20px;
-        border-radius: 10px;
-        color: white;
-        margin: 10px 0;
+        margin: 15px 0;
+        box-shadow: 0 8px 32px rgba(34, 197, 94, 0.2);
     }
-    .stat-value { font-size: 32px; font-weight: bold; }
-    .stat-label { font-size: 14px; opacity: 0.8; }
+    
+    .strong-pick {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(30, 58, 138, 0.1) 100%);
+        border: 2px solid #3b82f6;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 15px 0;
+        box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
+    }
+    
+    .solid-pick {
+        background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(120, 81, 16, 0.1) 100%);
+        border: 2px solid #eab308;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 15px 0;
+        box-shadow: 0 8px 32px rgba(234, 179, 8, 0.2);
+    }
+    
+    /* Metric cards */
+    .metric-card {
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(100, 116, 139, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }
+    
+    .metric-label { color: #94a3b8; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+    .metric-value { color: #ffffff; font-size: 2rem; font-weight: 700; margin: 10px 0; }
+    .metric-change { font-size: 0.85rem; }
+    
+    /* Info boxes */
+    .info-box {
+        background: rgba(30, 58, 138, 0.2);
+        border-left: 4px solid #3b82f6;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+    }
+    
+    .warning-box {
+        background: rgba(168, 85, 247, 0.2);
+        border-left: 4px solid #a855f7;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+    }
+    
+    /* Table styling */
+    [data-testid="stDataFrame"] {
+        background: rgba(30, 41, 59, 0.6) !important;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+        box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Text colors */
+    .text-success { color: #22c55e; }
+    .text-warning { color: #eab308; }
+    .text-danger { color: #ef4444; }
+    .text-info { color: #3b82f6; }
+    
+    /* Divider */
+    hr { border-color: rgba(100, 116, 139, 0.2); }
 </style>
 """, unsafe_allow_html=True)
-
-# ============================================================================
-# AUTO TEAM LOOKUP
-# ============================================================================
-
-@st.cache_data(ttl=86400)
-def fetch_nba_player_teams():
-    """Fetch current NBA rosters from ESPN API"""
-    team_map = {}
-    try:
-        url = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams"
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            if 'sports' in data and len(data['sports']) > 0:
-                teams = data['sports'][0]['leagues'][0]['teams']
-                for team_data in teams:
-                    team = team_data['team']
-                    team_abbr = team.get('abbreviation', '')
-                    team_id = team.get('id', '')
-                    roster_url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/{team_id}/roster"
-                    try:
-                        roster_response = requests.get(roster_url, timeout=5)
-                        if roster_response.status_code == 200:
-                            roster_data = roster_response.json()
-                            if 'athletes' in roster_data:
-                                for athlete in roster_data['athletes']:
-                                    player_name = athlete.get('displayName', '')
-                                    if player_name:
-                                        team_map[player_name] = team_abbr
-                    except:
-                        continue
-    except:
-        pass
-    return team_map
-
-def get_team(player_name, team_map):
-    """Get team abbreviation for a player"""
-    if player_name in team_map:
-        return team_map[player_name]
-    for roster_name, team in team_map.items():
-        if player_name.lower() in roster_name.lower() or roster_name.lower() in player_name.lower():
-            return team
-    return 'N/A'
 
 # ============================================================================
 # LOAD DATA
@@ -110,17 +153,21 @@ def load_todays_edges():
 # HELPER FUNCTIONS
 # ============================================================================
 
+def get_tier_badge(edge):
+    """Get tier badge based on edge"""
+    if edge >= 5:
+        return "🟢 ELITE", "#22c55e"
+    elif edge >= 4:
+        return "🔵 STRONG", "#3b82f6"
+    else:
+        return "🟡 SOLID", "#eab308"
+
 def calculate_metrics(df):
     """Calculate overall metrics"""
     if len(df) == 0:
         return {
-            'total_bets': 0,
-            'wins': 0,
-            'losses': 0,
-            'voids': 0,
-            'win_rate': 0,
-            'avg_margin_win': 0,
-            'avg_margin_loss': 0
+            'total_bets': 0, 'wins': 0, 'losses': 0, 'voids': 0,
+            'win_rate': 0, 'avg_margin_win': 0, 'avg_margin_loss': 0
         }
     
     valid_df = df[df['RESULT'] != 'VOID']
@@ -135,200 +182,328 @@ def calculate_metrics(df):
     avg_margin_loss = loss_margins.mean() if len(loss_margins) > 0 else 0
     
     return {
-        'total_bets': len(valid_df),
-        'wins': wins,
-        'losses': losses,
-        'voids': voids,
-        'win_rate': win_rate,
-        'avg_margin_win': avg_margin_win,
-        'avg_margin_loss': avg_margin_loss
+        'total_bets': len(valid_df), 'wins': wins, 'losses': losses, 'voids': voids,
+        'win_rate': win_rate, 'avg_margin_win': avg_margin_win, 'avg_margin_loss': avg_margin_loss
     }
 
-def calculate_edge_breakdown(df):
-    """Calculate win rate by edge range"""
-    if len(df) == 0:
-        return pd.DataFrame()
+def display_pick_card(player, stat, line, projected, edge, odds, kelly_size, idx):
+    """Display a beautiful pick card"""
+    tier_text, color = get_tier_badge(edge)
     
-    valid_df = df[df['RESULT'] != 'VOID'].copy()
-    valid_df['EDGE_BUCKET'] = pd.cut(valid_df['EDGE'], bins=[0, 2.5, 3.5, 4.5, 100], labels=['2.0-2.5', '2.5-3.5', '3.5-4.5', '4.5+'])
+    # Calculate bet amount on $1000 bankroll
+    bet_amount = (kelly_size / 100) * 1000
     
-    breakdown = []
-    for bucket in ['2.0-2.5', '2.5-3.5', '3.5-4.5', '4.5+']:
-        bucket_df = valid_df[valid_df['EDGE_BUCKET'] == bucket]
-        if len(bucket_df) > 0:
-            wins = (bucket_df['RESULT'] == 'WIN').sum()
-            losses = (bucket_df['RESULT'] == 'LOSS').sum()
-            total = wins + losses
-            win_rate = (wins / total * 100) if total > 0 else 0
-            breakdown.append({
-                'Edge': bucket,
-                'Record': f"{wins}-{losses}",
-                'Win%': f"{win_rate:.1f}%"
-            })
+    # Calculate payout
+    if odds > 0:
+        payout = bet_amount * (odds / 100)
+    else:
+        payout = bet_amount * (100 / abs(odds))
     
-    return pd.DataFrame(breakdown)
+    # EV calculation
+    ev = payout * (edge / 100)
+    
+    pick_class = "elite-pick" if edge >= 5 else ("strong-pick" if edge >= 4 else "solid-pick")
+    
+    card_html = f"""
+    <div class="{pick_class}">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div>
+                <h3 style="margin: 0; color: #ffffff;">{idx}. {player}</h3>
+                <p style="margin: 5px 0; color: #94a3b8; font-size: 0.9rem;">📊 {stat} Over {line}</p>
+            </div>
+            <div style="text-align: right;">
+                <span style="font-size: 1.2rem; font-weight: 700; color: {color};">{tier_text}</span>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;">
+            <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
+                <p style="margin: 0; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">Projected</p>
+                <p style="margin: 5px 0; color: #ffffff; font-size: 1.3rem; font-weight: 700;">{projected}</p>
+            </div>
+            <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
+                <p style="margin: 0; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">Edge</p>
+                <p style="margin: 5px 0; color: {color}; font-size: 1.3rem; font-weight: 700;">+{edge}%</p>
+            </div>
+            <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
+                <p style="margin: 0; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">Odds</p>
+                <p style="margin: 5px 0; color: #ffffff; font-size: 1.3rem; font-weight: 700;">{odds}</p>
+            </div>
+            <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
+                <p style="margin: 0; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">Kelly</p>
+                <p style="margin: 5px 0; color: #ffffff; font-size: 1.3rem; font-weight: 700;">{kelly_size}%</p>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+            <div style="text-align: center;">
+                <p style="margin: 0; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase;">Bet Amount</p>
+                <p style="margin: 8px 0; color: #22c55e; font-size: 1.4rem; font-weight: 700;">${bet_amount:.0f}</p>
+            </div>
+            <div style="text-align: center;">
+                <p style="margin: 0; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase;">If You Win</p>
+                <p style="margin: 8px 0; color: #3b82f6; font-size: 1.4rem; font-weight: 700;">${payout:.0f}</p>
+            </div>
+            <div style="text-align: center;">
+                <p style="margin: 0; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase;">Expected Value</p>
+                <p style="margin: 8px 0; color: #22c55e; font-size: 1.4rem; font-weight: 700;">+${ev:.0f}</p>
+            </div>
+        </div>
+    </div>
+    """
+    
+    st.markdown(card_html, unsafe_allow_html=True)
 
-def calculate_stat_type_breakdown(df):
-    """Calculate win rate by stat type"""
-    if len(df) == 0:
-        return pd.DataFrame()
+def display_guidance():
+    """Display betting guidance and tips"""
+    st.markdown("### 💡 Smart Betting Guidance")
     
-    valid_df = df[df['RESULT'] != 'VOID'].copy()
-    stat_types = valid_df['STAT'].unique()
+    col1, col2 = st.columns(2)
     
-    breakdown = []
-    for stat_type in sorted(stat_types):
-        type_df = valid_df[valid_df['STAT'] == stat_type]
-        if len(type_df) > 0:
-            wins = (type_df['RESULT'] == 'WIN').sum()
-            losses = (type_df['RESULT'] == 'LOSS').sum()
-            total = wins + losses
-            win_rate = (wins / total * 100) if total > 0 else 0
-            breakdown.append({
-                'Stat': stat_type,
-                'Record': f"{wins}-{losses}",
-                'Win%': f"{win_rate:.1f}%"
-            })
+    with col1:
+        st.markdown("""
+        <div class="info-box">
+        <b>🎯 Kelly Criterion Sizing</b><br>
+        The recommended bet size is calculated using Kelly Criterion, a mathematically optimal betting formula. 
+        It maximizes long-term wealth growth while managing risk. <b>Never exceed the suggested bet size.</b>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="info-box">
+        <b>📊 Edge Tiers Explained</b><br>
+        • <span class="text-success"><b>🟢 ELITE (5%+)</b></span>: Highly profitable, strongest opportunities<br>
+        • <span class="text-info"><b>🔵 STRONG (4-5%)</b></span>: Good value, consistent winners<br>
+        • <span class="text-warning"><b>🟡 SOLID (3.5-4%)</b></span>: Decent opportunities, play smaller
+        </div>
+        """, unsafe_allow_html=True)
     
-    return pd.DataFrame(breakdown)
+    with col2:
+        st.markdown("""
+        <div class="warning-box">
+        <b>⚠️ Risk Management</b><br>
+        • Spread bets across multiple games when possible<br>
+        • Never bet more than suggested Kelly size<br>
+        • Track all results to monitor performance<br>
+        • Stop if losing streak hits 3 consecutive losses
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div class="info-box">
+        <b>💰 Bankroll Tips</b><br>
+        • Base calculations on your actual bankroll<br>
+        • Conservative: Bet 50% of Kelly size<br>
+        • Aggressive: Bet 100% of Kelly size<br>
+        • Start small and scale up with wins
+        </div>
+        """, unsafe_allow_html=True)
 
 # ============================================================================
 # MAIN APP
 # ============================================================================
 
-st.markdown('# 🏀 NBA EDGE FINDER DASHBOARD')
+# Header
+col1, col2 = st.columns([0.1, 0.9])
+with col1:
+    st.markdown("🏀", unsafe_allow_html=True)
+with col2:
+    st.markdown("# NBA EDGE FINDER DASHBOARD")
+
+st.markdown(f"**Updated:** {datetime.now().strftime('%B %d, %Y at %I:%M %p EST')}", unsafe_allow_html=True)
+st.markdown("---")
 
 # Tabs
-tab1, tab2, tab3 = st.tabs(["📊 Today's Picks", "📈 Historical Results", "📉 Performance Analysis"])
+tab1, tab2, tab3 = st.tabs(["🎯 Today's Elite Picks", "📊 Historical Results", "📈 Performance"])
 
 # === TAB 1: TODAY'S PICKS ===
 with tab1:
-    st.markdown('## 🎯 Today\'s Edge Picks - ' + datetime.now().strftime('%B %d, %Y'))
-    
-    # Load today's edges
     today_edges = load_todays_edges()
     
     if len(today_edges) == 0:
-        st.info("⏳ No edge picks available yet. Check back later!")
+        st.markdown("""
+        <div class="info-box">
+        <h3>⏳ No Picks Available Yet</h3>
+        The edge finder runs periodically to identify profitable opportunities. 
+        Check back later for today's picks!
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        # Display summary metrics
-        col1, col2, col3, col4 = st.columns(4)
+        # Summary metrics
+        st.markdown("### 📈 Today's Summary")
+        
+        col1, col2, col3, col4, col5 = st.columns(5)
         
         with col1:
-            st.metric("Total Picks", len(today_edges))
+            st.markdown(f"""
+            <div class="metric-card">
+            <div class="metric-label">Total Picks</div>
+            <div class="metric-value">{len(today_edges)}</div>
+            </div>
+            """, unsafe_allow_html=True)
         
         with col2:
-            st.metric("Avg Edge", f"+{today_edges['EDGE'].mean():.2f}%")
+            st.markdown(f"""
+            <div class="metric-card">
+            <div class="metric-label">Avg Edge</div>
+            <div class="metric-value">+{today_edges['EDGE'].mean():.2f}%</div>
+            </div>
+            """, unsafe_allow_html=True)
         
         with col3:
-            st.metric("Best Edge", f"+{today_edges['EDGE'].max():.2f}%")
+            st.markdown(f"""
+            <div class="metric-card">
+            <div class="metric-label">Best Edge</div>
+            <div class="metric-value">+{today_edges['EDGE'].max():.2f}%</div>
+            </div>
+            """, unsafe_allow_html=True)
         
         with col4:
-            st.metric("Lowest Edge", f"+{today_edges['EDGE'].min():.2f}%")
+            elite_count = len(today_edges[today_edges['EDGE'] >= 5])
+            st.markdown(f"""
+            <div class="metric-card">
+            <div class="metric-label">Elite Picks</div>
+            <div class="metric-value" style="color: #22c55e;">{elite_count}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col5:
+            total_ev = (today_edges['EDGE'] * (today_edges['KELLY_SIZE'] / 100) * 1000 / 100).sum()
+            st.markdown(f"""
+            <div class="metric-card">
+            <div class="metric-label">Total EV</div>
+            <div class="metric-value" style="color: #22c55e;">+${total_ev:.0f}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("---")
         
         # Filters
-        st.markdown("### 🔍 Filters")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            stat_filter = st.multiselect(
-                "Stat Type",
-                options=today_edges['STAT'].unique(),
-                default=today_edges['STAT'].unique()
-            )
-        
-        with col2:
-            edge_min_today = st.slider(
-                "Minimum Edge (%)",
-                min_value=0.0,
-                max_value=10.0,
-                value=3.5,
-                step=0.5
-            )
-        
-        # Filter data
-        filtered_today = today_edges[today_edges['STAT'].isin(stat_filter)]
-        
-        # Check if EDGE column exists and filter
-        if 'EDGE' in filtered_today.columns:
-            filtered_today = filtered_today[filtered_today['EDGE'] >= edge_min_today]
-        
-        # Display picks
-        st.markdown(f"### 📋 {len(filtered_today)} Filtered Picks")
-        
-        if len(filtered_today) > 0:
-            # Create display dataframe
-            display_df = filtered_today[['PLAYER', 'STAT', 'LINE', 'PROJECTED', 'EDGE', 'ODDS', 'KELLY_SIZE']].copy()
-            
-            # Format columns
-            if 'EDGE' in display_df.columns:
-                display_df['EDGE'] = display_df['EDGE'].apply(lambda x: f"+{x:.2f}%" if pd.notna(x) else "N/A")
-            if 'KELLY_SIZE' in display_df.columns:
-                display_df['KELLY_SIZE'] = display_df['KELLY_SIZE'].apply(lambda x: f"{x:.1f}%" if pd.notna(x) else "N/A")
-            
-            st.dataframe(display_df, use_container_width=True, height=400)
-            
-            # Download button
-            csv = filtered_today.to_csv(index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv,
-                file_name=f"edges_{datetime.now().strftime('%Y-%m-%d')}.csv",
-                mime="text/csv"
-            )
-        else:
-            st.warning("No picks match your filters")
-
-# === TAB 2: HISTORICAL RESULTS ===
-with tab2:
-    st.markdown('## 📊 Historical Results')
-    
-    results_df = load_results_data()
-    
-    if len(results_df) == 0:
-        st.info("No historical data available yet. Start tracking results!")
-    else:
-        # Filters
+        st.markdown("### 🔍 Filter Picks")
         col1, col2, col3 = st.columns(3)
         
         with col1:
             stat_filter = st.multiselect(
                 "Stat Type",
-                options=results_df['STAT'].unique(),
-                default=results_df['STAT'].unique(),
-                key="hist_stat"
+                options=today_edges['STAT'].unique(),
+                default=today_edges['STAT'].unique(),
+                key="stat_filter"
             )
         
         with col2:
-            date_range = st.date_input(
-                "Date Range",
-                value=(results_df['DATE'].min(), results_df['DATE'].max()),
-                key="hist_date"
+            edge_min = st.slider(
+                "Minimum Edge (%)",
+                min_value=0.0,
+                max_value=10.0,
+                value=3.5,
+                step=0.5,
+                key="edge_min"
             )
         
         with col3:
-            result_filter = st.multiselect(
-                "Result",
-                options=['WIN', 'LOSS', 'VOID'],
-                default=['WIN', 'LOSS', 'VOID'],
-                key="hist_result"
+            tier_filter = st.multiselect(
+                "Tier",
+                options=["🟢 ELITE", "🔵 STRONG", "🟡 SOLID"],
+                default=["🟢 ELITE", "🔵 STRONG", "🟡 SOLID"],
+                key="tier_filter"
             )
         
         # Filter data
-        filtered_results = results_df[
-            (results_df['STAT'].isin(stat_filter)) &
-            (results_df['DATE'].dt.date >= date_range[0]) &
-            (results_df['DATE'].dt.date <= date_range[1]) &
-            (results_df['RESULT'].isin(result_filter))
+        filtered = today_edges[
+            (today_edges['STAT'].isin(stat_filter)) &
+            (today_edges['EDGE'] >= edge_min)
         ]
         
-        # Display results
-        st.dataframe(filtered_results, use_container_width=True, height=400)
+        # Apply tier filter
+        tier_edges = []
+        for _, row in filtered.iterrows():
+            tier_text, _ = get_tier_badge(row['EDGE'])
+            if any(tier in tier_text for tier in [t.split()[1] for t in tier_filter]):
+                tier_edges.append(row)
         
-        # Download button
-        csv = filtered_results.to_csv(index=False)
+        filtered = pd.DataFrame(tier_edges) if tier_edges else pd.DataFrame()
+        
+        st.markdown("---")
+        
+        # Display picks
+        if len(filtered) > 0:
+            st.markdown(f"### 🎯 {len(filtered)} Recommended Bets ($1000 Bankroll)")
+            
+            for idx, (_, row) in enumerate(filtered.iterrows(), 1):
+                display_pick_card(
+                    row['PLAYER'],
+                    row['STAT'],
+                    row['LINE'],
+                    row['PROJECTED'],
+                    row['EDGE'],
+                    row['ODDS'],
+                    row['KELLY_SIZE'],
+                    idx
+                )
+            
+            # Edge distribution
+            st.markdown("---")
+            st.markdown("### 📊 Edge Distribution")
+            
+            col1, col2, col3 = st.columns(3)
+            elite = len(filtered[filtered['EDGE'] >= 5])
+            strong = len(filtered[(filtered['EDGE'] >= 4) & (filtered['EDGE'] < 5)])
+            solid = len(filtered[filtered['EDGE'] < 4])
+            
+            with col1:
+                st.markdown(f"""
+                <div class="metric-card" style="border-left: 4px solid #22c55e;">
+                <div class="metric-label">Elite Picks</div>
+                <div class="metric-value" style="color: #22c55e;">{elite}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown(f"""
+                <div class="metric-card" style="border-left: 4px solid #3b82f6;">
+                <div class="metric-label">Strong Picks</div>
+                <div class="metric-value" style="color: #3b82f6;">{strong}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col3:
+                st.markdown(f"""
+                <div class="metric-card" style="border-left: 4px solid #eab308;">
+                <div class="metric-label">Solid Picks</div>
+                <div class="metric-value" style="color: #eab308;">{solid}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Download
+            st.markdown("---")
+            csv = filtered.to_csv(index=False)
+            st.download_button(
+                "📥 Download CSV",
+                data=csv,
+                file_name=f"picks_{datetime.now().strftime('%Y-%m-%d')}.csv",
+                mime="text/csv"
+            )
+        else:
+            st.warning("No picks match your filters")
+        
+        st.markdown("---")
+        display_guidance()
+
+# === TAB 2: HISTORICAL RESULTS ===
+with tab2:
+    st.markdown("### 📊 Historical Results")
+    
+    results_df = load_results_data()
+    
+    if len(results_df) == 0:
+        st.info("No historical data available yet")
+    else:
+        # Display table
+        st.dataframe(results_df, use_container_width=True, height=500)
+        
+        csv = results_df.to_csv(index=False)
         st.download_button(
-            label="📥 Download CSV",
+            "📥 Download CSV",
             data=csv,
             file_name=f"results_{datetime.now().strftime('%Y-%m-%d')}.csv",
             mime="text/csv"
@@ -336,34 +511,48 @@ with tab2:
 
 # === TAB 3: PERFORMANCE ANALYSIS ===
 with tab3:
-    st.markdown('## 📈 Performance Analytics')
-    
     results_df = load_results_data()
     
     if len(results_df) == 0:
         st.info("No data to analyze yet")
     else:
-        # Overall metrics
-        st.markdown('### 📊 Overall Performance')
         metrics = calculate_metrics(results_df)
         
+        st.markdown("### 📈 Overall Performance")
+        
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Bets", metrics['total_bets'])
-        col2.metric("Wins", metrics['wins'])
-        col3.metric("Losses", metrics['losses'])
-        col4.metric("Win Rate", f"{metrics['win_rate']:.1f}%")
         
-        # Edge breakdown
-        st.markdown('### 📊 Win Rate by Edge Range')
-        edge_breakdown = calculate_edge_breakdown(results_df)
-        if len(edge_breakdown) > 0:
-            st.dataframe(edge_breakdown, use_container_width=True)
+        with col1:
+            st.markdown(f"""
+            <div class="metric-card">
+            <div class="metric-label">Total Bets</div>
+            <div class="metric-value">{metrics['total_bets']}</div>
+            </div>
+            """, unsafe_allow_html=True)
         
-        # Stat type breakdown
-        st.markdown('### 📊 Win Rate by Stat Type')
-        stat_breakdown = calculate_stat_type_breakdown(results_df)
-        if len(stat_breakdown) > 0:
-            st.dataframe(stat_breakdown, use_container_width=True)
+        with col2:
+            st.markdown(f"""
+            <div class="metric-card">
+            <div class="metric-label">Wins</div>
+            <div class="metric-value" style="color: #22c55e;">{metrics['wins']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+            <div class="metric-card">
+            <div class="metric-label">Losses</div>
+            <div class="metric-value" style="color: #ef4444;">{metrics['losses']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            st.markdown(f"""
+            <div class="metric-card">
+            <div class="metric-label">Win Rate</div>
+            <div class="metric-value" style="color: #3b82f6;">{metrics['win_rate']:.1f}%</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-st.markdown('---')
-st.markdown('<p style="text-align: center; color: gray;">NBA Edge Finder Dashboard | Updated ' + datetime.now().strftime('%Y-%m-%d %H:%M:%S EST') + '</p>', unsafe_allow_html=True)
+st.markdown("---")
+st.markdown(f"<p style='text-align: center; color: #64748b; font-size: 0.85rem;'>NBA Edge Finder Dashboard | Last Updated {datetime.now().strftime('%B %d, %Y at %I:%M %p EST')}</p>", unsafe_allow_html=True)
