@@ -1,0 +1,66 @@
+Summary
+python project_props.py
+python find_edges_v2_TELEGRAM.py
+python track_results.py
+git add edges_2026-01-26.csv
+git commit -m "Update edges"
+git push
+
+
+
+🎯 Your Daily Betting Workflow:
+Step 1: Update Projections (4 PM Daily)
+powershell
+python project_props.py
+Reads nba_game_logs_2025_26.csv (your fresh data)
+
+Generates nba_projections_2026-01-26.csv
+
+Takes ~30 seconds
+
+Step 2: Find Edges (5 PM - When Lines Drop)
+powershell
+python find_edges_v2_TELEGRAM.py
+Scrapes FanDuel props
+
+Compares to your projections
+
+Finds 10%+ edges
+
+Sends Telegram alerts 🔔
+
+Step 3: Track Results (11 PM - After Games)
+powershell
+python track_results.py
+Checks which bets won/lost
+
+Updates bet_tracker.csv
+
+Calculates ROI
+
+📅 Weekly Maintenance:
+Sunday & Wednesday (2-3x per week):
+
+powershell
+python get_nba_data.py
+Updates game logs with fresh 15-day data
+
+Takes ~2 minutes
+
+Commit to GitHub if using version control
+
+🚀 Test It Now:
+Run Step 1 to generate today's projections:
+
+powershell
+python project_props.py
+Once that finishes, you'll have fresh projections ready for edge finding! 📊✨
+
+Want to test the full workflow? Or should I add that injury check we discussed earlier?
+
+
+
+
+
+
+
